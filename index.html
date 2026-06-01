@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>SwimTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0f1e;
+  --surface:#111827;
+  --surface2:#1a2235;
+  --border:#1e2d47;
+  --text:#f0f4ff;
+  --muted:#5a6e8a;
+  --accent:#3b82f6;
+  --accent2:#06b6d4;
+  --green:#10b981;
+  --red:#ef4444;
+  --amber:#f59e0b;
+  --purple:#8b5cf6;
+}
+html,body{height:100%;overflow:hidden;font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);}
+#app{height:100%;display:flex;flex-direction:column;}
+
+/* ── SCREENS ── */
+.screen{display:none;flex:1;overflow-y:auto;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* ── LOGIN ── */
+#loginScreen{align-items:center;justify-content:center;padding:32px 24px;background:var(--bg);}
+.login-logo{text-align:center;margin-bottom:48px;}
+.login-logo .wave{font-size:56px;display:block;margin-bottom:16px;animation:bob 3s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.login-logo h1{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;letter-spacing:-0.02em;}
+.login-logo h1 span{color:var(--accent2);}
+.login-logo p{color:var(--muted);font-size:0.9rem;margin-top:6px;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;width:100%;max-width:380px;}
+.field-label{font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;display:block;}
+select,input[type=text],input[type=password],input[type=number],input[type=time],textarea{
+  width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);
+  border-radius:12px;padding:13px 14px;font-family:inherit;font-size:0.95rem;outline:none;
+  transition:border-color 0.15s;appearance:none;-webkit-appearance:none;
+}
+select:focus,input:focus,textarea:focus{border-color:var(--accent);}
+.field{margin-bottom:18px;}
+.btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.15s,transform 0.1s;letter-spacing:0.02em;}
+.btn:active{transform:scale(0.98);opacity:0.9;}
+.btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn.green{background:var(--green);}
+.btn.danger{background:var(--red);}
+.pin-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.error-msg{color:var(--red);font-size:0.82rem;text-align:center;margin-top:12px;min-height:18px;}
+
+/* ── NAV BAR ── */
+#navBar{background:var(--surface);border-top:1px solid var(--border);display:none;flex-shrink:0;}
+#navBar.visible{display:flex;}
+.nav-items{display:flex;width:100%;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 6px 14px;cursor:pointer;color:var(--muted);transition:color 0.15s;border:none;background:transparent;font-family:inherit;}
+.nav-item.active{color:var(--accent);}
+.nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;margin-bottom:4px;}
+.nav-item span{font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;}
+
+/* ── HOME ── */
+#homeScreen{padding:0;}
+.home-header{padding:28px 20px 16px;background:linear-gradient(180deg,var(--surface) 0%,transparent 100%);}
+.greeting{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;}
+.greeting span{color:var(--accent2);}
+.greeting-sub{color:var(--muted);font-size:0.85rem;margin-top:4px;}
+.home-body{padding:0 16px 20px;}
+.section-title{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin:20px 0 10px;}
+.checklist{display:flex;flex-direction:column;gap:8px;}
+.check-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color 0.15s,background 0.15s;}
+.check-item:active{background:var(--surface2);}
+.check-item.done{border-color:#1a3a2a;}
+.check-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.check-info{flex:1;}
+.check-name{font-size:0.9rem;font-weight:500;}
+.check-sub{font-size:0.75rem;color:var(--muted);margin-top:2px;}
+.check-badge{font-size:0.7rem;font-weight:600;padding:4px 10px;border-radius:20px;flex-shrink:0;}
+.badge-todo{background:#1e2d47;color:var(--accent);}
+.badge-done{background:#1a3a2a;color:var(--green);}
+.stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;}
+.stat-mini{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;}
+.stat-mini-val{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--text);}
+.stat-mini-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-top:3px;}
+
+/* ── FORM SCREEN ── */
+#formScreen{padding:0;}
+.form-header{padding:20px 20px 0;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.back-btn{width:38px;height:38px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.back-btn svg{width:18px;height:18px;stroke:var(--text);fill:none;stroke-width:2;}
+.form-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;}
+.form-body{padding:20px 20px 32px;flex:1;overflow-y:auto;}
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;}
+.form-section-title{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:14px;}
+.rpe-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.rpe-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 4px;font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;color:var(--muted);transition:all 0.12s;}
+.rpe-btn.sel{color:#fff;border-color:transparent;}
+.zone-row{display:grid;grid-template-columns:80px 1fr 56px;align-items:center;gap:10px;margin-bottom:10px;}
+.zone-label{font-size:0.8rem;font-weight:500;}
+.zone-bar-wrap{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.zone-bar{height:100%;border-radius:4px;transition:width 0.3s;}
+textarea{resize:none;height:80px;}
+.submit-btn-wrap{padding:16px 20px 8px;flex-shrink:0;}
+
+/* ── STATS SCREEN ── */
+#statsScreen{padding:20px 16px 24px;}
+.stats-header{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;margin-bottom:4px;}
+.stats-sub{color:var(--muted);font-size:0.82rem;margin-bottom:20px;}
+.stat-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 14px;}
+.sc-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;}
+.sc-value{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:700;}
+.sc-unit{font-size:0.8rem;color:var(--muted);margin-left:3px;}
+.sc-trend{font-size:0.72rem;margin-top:4px;}
+.trend-up{color:var(--red);}
+.trend-down{color:var(--green);}
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;}
+.chart-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:12px;}
+canvas{max-height:200px;}
+
+/* ── HISTORY ── */
+#historyScreen{padding:20px 16px;}
+.history-header{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;margin-bottom:4px;}
+.history-sub{color:var(--muted);font-size:0.82rem;margin-bottom:20px;}
+.history-list{display:flex;flex-direction:column;gap:8px;}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:border-color 0.15s;}
+.history-item:active{border-color:var(--accent);}
+.hi-date{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;}
+.hi-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.pill{font-size:0.68rem;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);}
+.pill.swim{background:#0c2a3a;color:var(--accent2);}
+.pill.lift{background:#1a1a2e;color:var(--purple);}
+.pill.morning{background:#1a2a1a;color:var(--green);}
+.pill.evening{background:#2a1a0c;color:var(--amber);}
+.hi-scores{display:flex;gap:16px;margin-top:10px;}
+.hi-score{font-size:0.78rem;color:var(--muted);}
+.hi-score b{color:var(--text);font-weight:600;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;padding:12px 22px;border-radius:40px;font-size:0.85rem;font-weight:600;opacity:0;transition:all 0.3s;z-index:999;white-space:nowrap;pointer-events:none;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── PROFILE ── */
+#profileScreen{padding:24px 16px;}
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;text-align:center;margin-bottom:16px;}
+.avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin:0 auto 14px;color:#fff;}
+.profile-name{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;}
+.profile-group{color:var(--accent2);font-size:0.82rem;margin-top:4px;}
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-top:20px;}
+.ps-item{background:var(--surface);padding:14px 8px;text-align:center;}
+.ps-val{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;}
+.ps-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-top:3px;}
+.menu-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:8px;transition:border-color 0.15s;}
+.menu-item:active{border-color:var(--accent);}
+.menu-icon{width:36px;height:36px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.menu-text{font-size:0.9rem;font-weight:500;}
+.menu-arrow{margin-left:auto;color:var(--muted);font-size:1.1rem;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════════ -->
+<div id="loginScreen" class="screen active">
+  <div class="login-logo">
+    <span class="wave">🏊</span>
+    <h1>Swim<span>Track</span></h1>
+    <p>GWU Swimming & Diving</p>
+  </div>
+  <div class="login-card">
+    <div class="field">
+      <label class="field-label">Your name</label>
+      <select id="loginName">
+        <option value="">— Select your name —</option>
+        <optgroup label="Men's Mid-D">
+          <option>Justin Dostal</option>
+          <option>Ben Sosnowski</option>
+          <option>Gage Boushee</option>
+          <option>Matija Radjenovic</option>
+          <option>Shaedon Stratton</option>
+        </optgroup>
+        <optgroup label="Men's Sprint">
+          <option>Holden Thomas</option>
+          <option>Eldad Zamir</option>
+          <option>Alessandro Borsato</option>
+          <option>JJ Phillips</option>
+          <option>Owen Fritts</option>
+        </optgroup>
+        <optgroup label="Men's Distance">
+          <option>Daniel Choi</option>
+          <option>Efe Isler</option>
+          <option>Mitchell Bailey</option>
+        </optgroup>
+        <optgroup label="Men's Diving">
+          <option>Ben Bradley</option>
+          <option>Michael Wood</option>
+          <option>Christian Merturi</option>
+          <option>Holden Wheeler</option>
+        </optgroup>
+        <optgroup label="Women's Sprint">
+          <option>Breuklynn Harris</option>
+          <option>Katie Simpson</option>
+          <option>Natalie Sens</option>
+          <option>Bryce Scully</option>
+          <option>Marcella Orlandini</option>
+          <option>NamAnh Truong</option>
+          <option>Carla Nunn-Eckert</option>
+        </optgroup>
+        <optgroup label="Women's Mid-D">
+          <option>Colleen MacWilliams</option>
+          <option>Soraya Ebrahimi</option>
+          <option>Isabel Sayag</option>
+          <option>Mia Hren</option>
+          <option>Julia Gomez Carpi</option>
+          <option>Ellie Lydon</option>
+          <option>Nerea Gutierrez-Steinhauer</option>
+          <option>Alex Orris</option>
+          <option>Emily Weingust</option>
+          <option>Carmen Bunt</option>
+        </optgroup>
+        <optgroup label="Women's Distance">
+          <option>Meg Cleaver</option>
+          <option>Merve Tuncel</option>
+          <option>Talya Erdogan</option>
+        </optgroup>
+        <optgroup label="Women's Diving">
+          <option>Veronica Fyfe</option>
+          <option>Jadin Brown</option>
+          <option>Kaia Abbadi-MacIntosh</option>
+          <option>Eden Brenner</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="field">
+      <label class="field-label">PIN (demo: 1234)</label>
+      <input type="password" id="loginPin" maxlength="4" placeholder="••••">
+    </div>
+    <button class="btn" onclick="doLogin()">Sign In</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ══ HOME ══════════════════════════════════════════════════════ -->
+<div id="homeScreen" class="screen">
+  <div class="home-header">
+    <div class="greeting">Good morning, <span id="greetName">—</span></div>
+    <div class="greeting-sub" id="greetDate">Monday · June 1</div>
+  </div>
+  <div class="home-body">
+    <div class="section-title">Quick stats</div>
+    <div class="stats-strip">
+      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--accent2)">7.2h</div><div class="stat-mini-lbl">Sleep</div></div>
+      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--amber)">3</div><div class="stat-mini-lbl">Soreness</div></div>
+      <div class="stat-mini"><div class="stat-mini-val" style="color:var(--green)">58</div><div class="stat-mini-lbl">Rest HR</div></div>
+    </div>
+    <div class="section-title">Today's sessions</div>
+    <div class="checklist" id="checklistEl"></div>
+  </div>
+</div>
+
+<!-- ══ FORM ══════════════════════════════════════════════════════ -->
+<div id="formScreen" class="screen">
+  <div class="form-header">
+    <div class="back-btn" onclick="goBack()">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div class="form-title" id="formTitle">Session</div>
+  </div>
+  <div class="form-body" id="formBody"></div>
+  <div class="submit-btn-wrap">
+    <button class="btn green" onclick="submitForm()">Submit Session</button>
+  </div>
+</div>
+
+<!-- ══ STATS ══════════════════════════════════════════════════════ -->
+<div id="statsScreen" class="screen">
+  <div class="stats-header">My Stats</div>
+  <div class="stats-sub" id="statsAthleteLabel">—</div>
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="sc-label">Avg Sleep</div>
+      <div class="sc-value" style="color:var(--accent2)">7.4<span class="sc-unit">hrs</span></div>
+      <div class="sc-trend trend-down">↓ 0.3 vs last week</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Avg Soreness</div>
+      <div class="sc-value" style="color:var(--amber)">3.8<span class="sc-unit">/10</span></div>
+      <div class="sc-trend trend-up">↑ 0.6 vs last week</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Avg RPE</div>
+      <div class="sc-value" style="color:var(--purple)">6.9<span class="sc-unit">/10</span></div>
+      <div class="sc-trend trend-up">↑ 0.2 vs last week</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">Resting HR</div>
+      <div class="sc-value" style="color:var(--green)">57<span class="sc-unit">bpm</span></div>
+      <div class="sc-trend trend-down">↓ 2 vs last week</div>
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-label">Soreness & Load — last 7 days</div>
+    <canvas id="statsChart"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-label">HR Zone Distribution — this week</div>
+    <canvas id="zoneChart"></canvas>
+  </div>
+</div>
+
+<!-- ══ HISTORY ════════════════════════════════════════════════════ -->
+<div id="historyScreen" class="screen">
+  <div class="history-header">History</div>
+  <div class="history-sub">Your past submissions</div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<!-- ══ PROFILE ════════════════════════════════════════════════════ -->
+<div id="profileScreen" class="screen">
+  <div class="profile-card">
+    <div class="avatar" id="profileAvatar">JD</div>
+    <div class="profile-name" id="profileName">—</div>
+    <div class="profile-group" id="profileGroup">—</div>
+    <div class="profile-stats">
+      <div class="ps-item"><div class="ps-val">14</div><div class="ps-lbl">Sessions</div></div>
+      <div class="ps-item"><div class="ps-val">7</div><div class="ps-lbl">Days</div></div>
+      <div class="ps-item"><div class="ps-val">92%</div><div class="ps-lbl">Logged</div></div>
+    </div>
+  </div>
+  <div class="menu-item"><div class="menu-icon">🔔</div><div class="menu-text">Notifications</div><div class="menu-arrow">›</div></div>
+  <div class="menu-item"><div class="menu-icon">🔒</div><div class="menu-text">Change PIN</div><div class="menu-arrow">›</div></div>
+  <div class="menu-item"><div class="menu-icon">📊</div><div class="menu-text">Export My Data</div><div class="menu-arrow">›</div></div>
+  <div class="menu-item" onclick="doLogout()"><div class="menu-icon">🚪</div><div class="menu-text" style="color:var(--red)">Sign Out</div></div>
+</div>
+
+<!-- ══ NAV BAR ════════════════════════════════════════════════════ -->
+<nav id="navBar">
+  <div class="nav-items">
+    <button class="nav-item active" onclick="showScreen('homeScreen',this)" id="navHome">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('statsScreen',this)" id="navStats">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Stats</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('historyScreen',this)" id="navHistory">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('profileScreen',this)" id="navProfile">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profile</span>
+    </button>
+  </div>
+</nav>
+<div id="toast"></div>
+
+<script>
+var currentUser = null;
+var currentGroup = null;
+var completedSessions = new Set();
+var chartInstances = {};
+
+var GROUPS = {
+  "Justin Dostal":"Men's Mid-D","Ben Sosnowski":"Men's Mid-D","Gage Boushee":"Men's Mid-D",
+  "Matija Radjenovic":"Men's Mid-D","Shaedon Stratton":"Men's Mid-D",
+  "Holden Thomas":"Men's Sprint","Eldad Zamir":"Men's Sprint","Alessandro Borsato":"Men's Sprint",
+  "JJ Phillips":"Men's Sprint","Owen Fritts":"Men's Sprint",
+  "Daniel Choi":"Men's Distance","Efe Isler":"Men's Distance","Mitchell Bailey":"Men's Distance",
+  "Ben Bradley":"Men's Diving","Michael Wood":"Men's Diving","Christian Merturi":"Men's Diving","Holden Wheeler":"Men's Diving",
+  "Breuklynn Harris":"Women's Sprint","Katie Simpson":"Women's Sprint","Natalie Sens":"Women's Sprint",
+  "Bryce Scully":"Women's Sprint","Marcella Orlandini":"Women's Sprint","NamAnh Truong":"Women's Sprint","Carla Nunn-Eckert":"Women's Sprint",
+  "Colleen MacWilliams":"Women's Mid-D","Soraya Ebrahimi":"Women's Mid-D","Isabel Sayag":"Women's Mid-D",
+  "Mia Hren":"Women's Mid-D","Julia Gomez Carpi":"Women's Mid-D","Ellie Lydon":"Women's Mid-D",
+  "Nerea Gutierrez-Steinhauer":"Women's Mid-D","Alex Orris":"Women's Mid-D","Emily Weingust":"Women's Mid-D","Carmen Bunt":"Women's Mid-D",
+  "Meg Cleaver":"Women's Distance","Merve Tuncel":"Women's Distance","Talya Erdogan":"Women's Distance",
+  "Veronica Fyfe":"Women's Diving","Jadin Brown":"Women's Diving","Kaia Abbadi-MacIntosh":"Women's Diving","Eden Brenner":"Women's Diving"
+};
+
+var TODAY_SESSIONS = [
+  {id:'morning', icon:'🌅', name:'Morning Check-in', sub:'Soreness · HR · Stress', color:'#1a3a2a', type:'morning'},
+  {id:'monLift',  icon:'🏋️', name:'Monday AM — Lift',  sub:'RPE · Self-eval · Notes', color:'#1a1a2e', type:'lift'},
+  {id:'monAM',   icon:'🏊', name:'Monday AM — Swim',  sub:'Test swim · RPE · Eval', color:'#0c2a3a', type:'swim'},
+  {id:'monPM',   icon:'🏊', name:'Monday PM — Swim',  sub:'HR Zones · RPE · Notes', color:'#0c2a3a', type:'swimZone'},
+  {id:'evening', icon:'🌙', name:'Evening Check-in',  sub:'Soreness · Nutrition · Bedtime', color:'#2a1a0c', type:'evening'},
+];
+
+var DEMO_HISTORY = [
+  {date:'May 30, 2026', sessions:['Morning','Lift','Swim AM','Swim PM','Evening'], sore:3, rpe:7},
+  {date:'May 29, 2026', sessions:['Morning','Swim AM','Evening'], sore:5, rpe:6},
+  {date:'May 28, 2026', sessions:['Morning','Swim AM','Swim PM','Evening'], sore:4, rpe:8},
+  {date:'May 27, 2026', sessions:['Morning','Lift','Evening'], sore:2, rpe:5},
+  {date:'May 26, 2026', sessions:['Morning','Swim AM','Evening'], sore:3, rpe:7},
+];
+
+function doLogin() {
+  var name = document.getElementById('loginName').value;
+  var pin  = document.getElementById('loginPin').value;
+  var err  = document.getElementById('loginError');
+  if (!name) { err.textContent = 'Please select your name.'; return; }
+  if (pin !== '1234') { err.textContent = 'Incorrect PIN. (Demo: use 1234)'; return; }
+  err.textContent = '';
+  currentUser  = name;
+  currentGroup = GROUPS[name] || 'Team';
+  initApp();
+}
+
+function initApp() {
+  document.getElementById('greetName').textContent = currentUser.split(' ')[0];
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var now = new Date();
+  document.getElementById('greetDate').textContent = days[now.getDay()] + ' · ' + months[now.getMonth()] + ' ' + now.getDate();
+  document.getElementById('statsAthleteLabel').textContent = currentUser + ' — ' + currentGroup;
+  var initials = currentUser.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+  document.getElementById('profileAvatar').textContent = initials;
+  document.getElementById('profileName').textContent = currentUser;
+  document.getElementById('profileGroup').textContent = currentGroup;
+  buildChecklist();
+  buildHistory();
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('homeScreen').classList.add('active');
+  document.getElementById('navBar').classList.add('visible');
+  setTimeout(buildCharts, 300);
+}
+
+function buildChecklist() {
+  var el = document.getElementById('checklistEl');
+  el.innerHTML = '';
+  TODAY_SESSIONS.forEach(function(s) {
+    var done = completedSessions.has(s.id);
+    var div = document.createElement('div');
+    div.className = 'check-item' + (done ? ' done' : '');
+    div.innerHTML = '<div class="check-icon" style="background:'+s.color+'">' + s.icon + '</div>' +
+      '<div class="check-info"><div class="check-name">' + s.name + '</div><div class="check-sub">' + s.sub + '</div></div>' +
+      '<div class="check-badge ' + (done?'badge-done':'badge-todo') + '">' + (done?'Done':'Fill out') + '</div>';
+    if (!done) div.onclick = function(){ openForm(s); };
+    el.appendChild(div);
+  });
+}
+
+function openForm(session) {
+  document.getElementById('formTitle').textContent = session.icon + ' ' + session.name;
+  var body = document.getElementById('formBody');
+  body.innerHTML = '';
+  body.dataset.sessionId = session.id;
+
+  if (session.type === 'morning') {
+    body.innerHTML = buildScale('Morning Soreness','How sore do you feel?','mornSore') +
+      buildScale('Academic Stress','Stress level today?','acadStress') +
+      buildTimeField('Wake Up Time','wakeTime') +
+      buildNumField('Resting HR (bpm)','restingHR','58');
+  } else if (session.type === 'evening') {
+    body.innerHTML = buildScale('Evening Soreness','How sore at end of day?','eveSore') +
+      buildScale('Nutrition (1-10)','How was your fueling?','nutrition') +
+      buildTimeField('Bedtime','bedtime');
+  } else if (session.type === 'lift') {
+    body.innerHTML = buildRPE() + buildScale('Self-Evaluation','How well did you perform?','selfEval') + buildNotes();
+  } else if (session.type === 'swim') {
+    body.innerHTML = buildRPE() +
+      buildNumField('25y Time (seconds)','time25y','11.4') +
+      buildNumField('Kick Count','kickCount','18') +
+      buildNumField('Stroke Count','strokeCount','14') +
+      buildScale('Self-Evaluation','How well did you perform?','selfEval') + buildNotes();
+  } else if (session.type === 'swimZone') {
+    body.innerHTML = buildRPE() + buildZones() + buildScale('Self-Evaluation','How well did you perform?','selfEval') + buildNotes();
+  }
+
+  hideAllScreens();
+  document.getElementById('formScreen').classList.add('active');
+}
+
+function buildRPE() {
+  var btns = '';
+  for (var i=1;i<=10;i++) {
+    var c = i<=3?'var(--green)':i<=6?'var(--amber)':i<=8?'var(--accent)':'var(--red)';
+    btns += '<button class="rpe-btn" data-rpe="'+i+'" onclick="selRPE(this,'+i+')" style="--rc:'+c+'">'+i+'</button>';
+  }
+  return '<div class="form-section"><div class="form-section-title">RPE — Perceived Exertion</div><div class="rpe-grid">'+btns+'</div></div>';
+}
+
+function selRPE(btn, val) {
+  btn.closest('.rpe-grid').querySelectorAll('.rpe-btn').forEach(function(b){
+    b.classList.remove('sel'); b.style.background='';
+  });
+  btn.classList.add('sel');
+  btn.style.background = getComputedStyle(btn).getPropertyValue('--rc') || 'var(--accent)';
+  var c = val<=3?'#10b981':val<=6?'#f59e0b':val<=8?'#3b82f6':'#ef4444';
+  btn.style.background = c;
+}
+
+function buildScale(title, sub, id) {
+  var btns = '';
+  for (var i=1;i<=10;i++) btns += '<button class="rpe-btn" data-val="'+i+'" onclick="selScale(this,\''+id+'\','+i+')" style="font-size:0.85rem">'+i+'</button>';
+  return '<div class="form-section"><div class="form-section-title">'+title+'</div><div style="color:var(--muted);font-size:0.78rem;margin-bottom:10px;">'+sub+'</div><div class="rpe-grid" id="scale-'+id+'">'+btns+'</div></div>';
+}
+
+function selScale(btn, id, val) {
+  document.getElementById('scale-'+id).querySelectorAll('.rpe-btn').forEach(function(b){
+    b.classList.remove('sel'); b.style.background='';
+  });
+  btn.classList.add('sel'); btn.style.background='var(--accent)';
+}
+
+function buildNumField(label, id, placeholder) {
+  return '<div class="form-section"><div class="form-section-title">'+label+'</div><input type="number" id="field-'+id+'" placeholder="'+placeholder+'" inputmode="decimal"></div>';
+}
+
+function buildTimeField(label, id) {
+  return '<div class="form-section"><div class="form-section-title">'+label+'</div><input type="time" id="field-'+id+'"></div>';
+}
+
+function buildNotes() {
+  return '<div class="form-section"><div class="form-section-title">Notes for coach (optional)</div><textarea id="field-notes" placeholder="Anything worth noting…"></textarea></div>';
+}
+
+function buildZones() {
+  var zones = [{z:'Z1',c:'#bfdbfe'},{z:'Z2',c:'#6ee7b7'},{z:'Z3',c:'#fde68a'},{z:'Z4',c:'#fca5a5'},{z:'Z5',c:'#f87171'}];
+  var rows = zones.map(function(z,i){
+    return '<div class="zone-row"><div class="zone-label">'+z.z+'</div><input type="number" id="zone-'+(i+1)+'" placeholder="0" min="0" style="padding:8px 10px;font-size:0.85rem;" oninput="updateZoneBar(this,'+(i+1)+',\''+z.c+'\')"><div style="font-size:0.75rem;color:var(--muted)">min</div></div>';
+  }).join('');
+  return '<div class="form-section"><div class="form-section-title">HR Zone Time (minutes)</div>'+rows+'</div>';
+}
+
+function updateZoneBar(inp, idx, color) {}
+
+function buildNotes() {
+  return '<div class="form-section"><div class="form-section-title">Notes for coach (optional)</div><textarea id="field-notes" placeholder="Anything worth noting…"></textarea></div>';
+}
+
+function submitForm() {
+  var id = document.getElementById('formBody').dataset.sessionId;
+  completedSessions.add(id);
+  showToast('Session logged!');
+  buildChecklist();
+  goBack();
+}
+
+function goBack() {
+  hideAllScreens();
+  document.getElementById('homeScreen').classList.add('active');
+  setNavActive(document.getElementById('navHome'));
+}
+
+function buildHistory() {
+  var el = document.getElementById('historyList');
+  el.innerHTML = '';
+  DEMO_HISTORY.forEach(function(item) {
+    var pills = item.sessions.map(function(s){
+      var cls = s.toLowerCase().indexOf('swim')>-1?'swim':s.toLowerCase().indexOf('lift')>-1?'lift':s.toLowerCase()==='morning'?'morning':'evening';
+      return '<span class="pill '+cls+'">'+s+'</span>';
+    }).join('');
+    var div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = '<div class="hi-date">'+item.date+'</div><div class="hi-pills">'+pills+'</div><div class="hi-scores"><span class="hi-score">Soreness <b>'+item.sore+'/10</b></span><span class="hi-score">Avg RPE <b>'+item.rpe+'/10</b></span></div>';
+    el.appendChild(div);
+  });
+}
+
+function buildCharts() {
+  if (typeof Chart === 'undefined') return;
+  var opts = {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#5a6e8a',font:{size:10},boxWidth:10}}},
+    scales:{x:{grid:{display:false},ticks:{color:'#5a6e8a',font:{size:9}}},
+            y:{grid:{color:'#1a2235'},ticks:{color:'#5a6e8a',font:{size:9}}}}
+  };
+  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  if (chartInstances.stats) { chartInstances.stats.destroy(); }
+  chartInstances.stats = new Chart(document.getElementById('statsChart').getContext('2d'),{
+    type:'line',
+    data:{labels:days,datasets:[
+      {label:'Soreness',data:[3,4,5,3,4,2,3],borderColor:'#f97066',backgroundColor:'#f9706620',borderWidth:2,pointRadius:3,tension:0.4,spanGaps:true,fill:true},
+      {label:'RPE',data:[7,6,8,5,7,null,null],borderColor:'#4f8ef7',backgroundColor:'#4f8ef720',borderWidth:2,pointRadius:3,tension:0.4,spanGaps:true,fill:true}
+    ]},
+    options:Object.assign({},opts,{scales:{x:{grid:{display:false},ticks:{color:'#5a6e8a',font:{size:9}}},y:{min:0,max:10,grid:{color:'#1a2235'},ticks:{color:'#5a6e8a',font:{size:9}}}}})
+  });
+
+  if (chartInstances.zone) { chartInstances.zone.destroy(); }
+  chartInstances.zone = new Chart(document.getElementById('zoneChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:days,datasets:[
+      {label:'Z1',data:[20,15,25,10,18,0,0],backgroundColor:'#bfdbfe99',borderWidth:0,borderRadius:2},
+      {label:'Z2',data:[15,20,10,25,15,0,0],backgroundColor:'#6ee7b799',borderWidth:0,borderRadius:2},
+      {label:'Z3',data:[10,8,15,5,12,0,0],backgroundColor:'#fde68a99',borderWidth:0,borderRadius:2},
+      {label:'Z4',data:[5,10,8,15,6,0,0],backgroundColor:'#fca5a599',borderWidth:0,borderRadius:2},
+      {label:'Z5',data:[3,5,4,8,4,0,0],backgroundColor:'#f8717199',borderWidth:0,borderRadius:2},
+    ]},
+    options:Object.assign({},opts,{scales:{
+      x:{stacked:true,grid:{display:false},ticks:{color:'#5a6e8a',font:{size:9}}},
+      y:{stacked:true,grid:{color:'#1a2235'},ticks:{color:'#5a6e8a',font:{size:9}},title:{display:true,text:'min',color:'#5a6e8a',font:{size:9}}}
+    }})
+  });
+}
+
+function showScreen(id, btn) {
+  hideAllScreens();
+  document.getElementById(id).classList.add('active');
+  if (btn) setNavActive(btn);
+  if (id === 'statsScreen') setTimeout(buildCharts, 100);
+}
+
+function hideAllScreens() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+}
+
+function setNavActive(btn) {
+  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+
+function doLogout() {
+  currentUser = null; currentGroup = null; completedSessions.clear();
+  hideAllScreens();
+  document.getElementById('navBar').classList.remove('visible');
+  document.getElementById('loginScreen').classList.add('active');
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginPin').value = '';
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+</script>
+</body>
+</html>
